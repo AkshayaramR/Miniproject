@@ -46,37 +46,29 @@ export default function Signup() {
 
       
       const userData = {
-        id: authData.user.id,
-        email: email,
-        password: 'oauth-user', 
-        role: role,
-        sport: sport,
-        verified: role === 'student', 
-        certificate_url: null
-      }
+  id: authData.user.id,
+  email: email,
+  role: role,
+  sport: sport || null,
+  verified: role === 'student',
+  certificate_url: null
+}
+
 
       console.log('Creating user profile:', userData)
 
-      const { error: dbError } = await supabase
-        .from('users')
-        .insert([userData])
+      const { data, error } = await supabase
+  .from('users')
+  .upsert(userData, { onConflict: 'id' })
+  .throwOnError();
 
-      if (dbError) {
-        console.error('Database insert error:', dbError)
-        
-       
-        if (dbError.code === '23505') { 
-          console.log('User already exists, updating profile...')
-          const { error: updateError } = await supabase
-            .from('users')
-            .update(userData)
-            .eq('id', authData.user.id)
-          
-          if (updateError) throw updateError
-        } else {
-          throw dbError
-        }
-      }
+console.log('User profile inserted / updated');
+
+console.log('DB RESULT:', { data, error });
+
+if (error) {
+  throw error;
+}
 
       console.log('User profile created/updated in database')
 

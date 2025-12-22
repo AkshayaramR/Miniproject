@@ -1,5 +1,6 @@
 'use client'
-import { useState, useRef } from 'react'
+
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
@@ -8,7 +9,6 @@ import { fitnessAI } from '@/lib/ai-analysis'
 
 type TestType = 'vertical_jump' | 'shuttle_run' | 'sit_ups'
 
-// VideoUpload component remains the same...
 function VideoUpload({ 
   onVideoUrlChange, 
   currentVideoUrl 
@@ -67,9 +67,7 @@ function VideoUpload({
     } finally {
       setUploading(false)
       setUploadProgress(0)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -154,6 +152,11 @@ export default function TakeTest() {
   const [analysisProgress, setAnalysisProgress] = useState(0)
   const [videoUrl, setVideoUrl] = useState('')
 
+  const [isClient, setIsClient] = useState(false)
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
   const tests = [
     {
       id: 'vertical_jump' as TestType,
@@ -177,7 +180,7 @@ export default function TakeTest() {
 
   const handleTestSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedTest || !user) return
+    if (!selectedTest || !user || !isClient) return
 
     setUploading(true)
     setAnalyzing(true)
@@ -186,7 +189,6 @@ export default function TakeTest() {
     try {
       console.log('🚀 Starting AI analysis for user:', user.id)
 
-      // Simulate analysis progress
       const progressInterval = setInterval(() => {
         setAnalysisProgress(prev => {
           if (prev >= 90) {
@@ -201,31 +203,30 @@ export default function TakeTest() {
 
       if (videoUrl) {
         console.log('🎯 Analyzing video with AI...');
-        
+
         switch (selectedTest) {
           case 'vertical_jump':
-            analysis = await fitnessAI.analyzeVerticalJump(videoUrl);
-            break;
+            analysis = await fitnessAI.analyzeVerticalJump(videoUrl)
+            break
           case 'shuttle_run':
-            analysis = await fitnessAI.analyzeShuttleRun(videoUrl);
-            break;
+            analysis = await fitnessAI.analyzeShuttleRun(videoUrl)
+            break
           case 'sit_ups':
-            analysis = await fitnessAI.analyzeSitUps(videoUrl);
-            break;
+            analysis = await fitnessAI.analyzeSitUps(videoUrl)
+            break
           default:
-            analysis = await fitnessAI.analyzeVerticalJump(videoUrl);
+            analysis = await fitnessAI.analyzeVerticalJump(videoUrl)
         }
       } else {
-        console.log('ℹ️ No video provided, using AI assessment');
-        analysis = await fitnessAI.analyzeVerticalJump('');
+        console.log('ℹ️ No video provided, using AI assessment')
+        analysis = await fitnessAI.analyzeVerticalJump('')
       }
 
       clearInterval(progressInterval)
       setAnalysisProgress(100)
 
-      console.log('🤖 AI Analysis Results:', analysis);
+      console.log('🤖 AI Analysis Results:', analysis)
 
-      // Create test record with AI analysis
       const { data, error: dbError } = await supabase
         .from('fitness_tests')
         .insert([
@@ -328,7 +329,7 @@ export default function TakeTest() {
                 </div>
               </div>
             </div>
-        
+
             <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-6">
               <h3 className="text-lg font-semibold mb-4">Performance Video (Recommended)</h3>
               <p className="text-sm text-gray-600 mb-4">
@@ -342,7 +343,6 @@ export default function TakeTest() {
             </div>
 
             <form onSubmit={handleTestSubmit} className="space-y-6">
-              {/* AI Analysis Progress */}
               {analyzing && (
                 <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4">
                   <div className="flex items-center space-x-3">

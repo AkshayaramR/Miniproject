@@ -21,7 +21,7 @@ export default function DashboardPage() {
         
         const { data: profile, error } = await supabase
           .from('users')
-          .select('role, verified')
+          .select('role')
           .eq('id', user.id)
           .single()
 
@@ -33,7 +33,7 @@ export default function DashboardPage() {
 
         console.log('📋 DEBUG: User profile:', profile)
 
-        if (profile?.role === 'coach' && profile?.verified) {
+        if (profile?.role === 'coach') {
           console.log('🎯 DEBUG: Redirecting to COACH dashboard')
           router.push('/dashboard/coach')
         } else {

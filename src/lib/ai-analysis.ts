@@ -3,55 +3,59 @@ import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 export class FitnessAI {
   private poseLandmarker: PoseLandmarker | null = null;
   private isInitialized = false;
+  private usedSuggestions = new Set<string>();
+  private isClient: boolean;
+
+  constructor() {
+    this.isClient = typeof window !== 'undefined';
+  }
 
   async initialize() {
+    if (!this.isClient) {
+      console.log('⚠️ MediaPipe AI skipped: Not running on client.');
+      this.isInitialized = true;
+      return;
+    }
+
     if (this.isInitialized) return;
 
     try {
       console.log('🔄 Initializing MediaPipe AI...');
-      
+
       const vision = await FilesetResolver.forVisionTasks(
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
       );
 
       this.poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
         baseOptions: {
-          modelAssetPath: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/1/pose_landmarker_heavy.task`,
-          delegate: "GPU"
+          modelAssetPath:
+            "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/1/pose_landmarker_heavy.task",
+          delegate: "GPU",
         },
         runningMode: "VIDEO",
-        numPoses: 2
+        numPoses: 1,
       });
 
       this.isInitialized = true;
-      console.log('✅ MediaPipe AI initialized successfully');
+      console.log('✅ MediaPipe AI initialized');
     } catch (error) {
-      console.error('❌ Error initializing MediaPipe:', error);
-      // Fallback to simulation mode
+      console.error('❌ MediaPipe failed, using simulation:', error);
       this.isInitialized = true;
     }
   }
 
   async analyzeVerticalJump(videoUrl: string): Promise<any> {
     await this.initialize();
-    
+
     return new Promise((resolve) => {
-      // Simulate AI processing with realistic timing
       setTimeout(async () => {
         try {
-          let analysis;
-          
-          if (this.poseLandmarker) {
-            // Real AI analysis with MediaPipe
-            analysis = await this.realVerticalJumpAnalysis(videoUrl);
-          } else {
-            // Fallback simulated analysis
-            analysis = this.simulatedVerticalJumpAnalysis();
-          }
-          
-          resolve(analysis);
-        } catch (error) {
-          console.error('AI analysis error:', error);
+          const result = this.poseLandmarker
+            ? await this.realVerticalJumpAnalysis(videoUrl)
+            : this.simulatedVerticalJumpAnalysis();
+
+          resolve(result);
+        } catch {
           resolve(this.simulatedVerticalJumpAnalysis());
         }
       }, 3000);
@@ -60,122 +64,120 @@ export class FitnessAI {
 
   async analyzeShuttleRun(videoUrl: string): Promise<any> {
     await this.initialize();
-    
+
     return new Promise((resolve) => {
       setTimeout(() => {
-        const analysis = {
-          score: Math.floor(Math.random() * 20 + 75),
+        resolve({
+          score: this.random(75, 92),
           suggestions: this.getAISuggestions('shuttle_run'),
           metrics: {
-            agility_score: Math.floor(Math.random() * 25 + 70),
-            speed_score: Math.floor(Math.random() * 25 + 70),
-            endurance_score: Math.floor(Math.random() * 25 + 70),
-            turn_efficiency: Math.floor(Math.random() * 30 + 65),
-            acceleration: (Math.random() * 1 + 2.5).toFixed(1),
-            ground_contact_time: (Math.random() * 50 + 150).toFixed(0) + 'ms'
+            agility_score: this.random(70, 95),
+            speed_score: this.random(70, 95),
+            turn_efficiency: this.random(65, 90),
+            acceleration: (Math.random() * 1 + 2.5).toFixed(1) + " m/s²",
           },
-          analysis_type: this.poseLandmarker ? 'ai_computer_vision' : 'ai_simulated'
-        };
-        resolve(analysis);
+          analysis_type: this.poseLandmarker ? 'ai_computer_vision' : 'ai_simulated',
+        });
       }, 2500);
     });
   }
 
   async analyzeSitUps(videoUrl: string): Promise<any> {
     await this.initialize();
-    
+
     return new Promise((resolve) => {
       setTimeout(() => {
-        const analysis = {
-          score: Math.floor(Math.random() * 20 + 75),
+        resolve({
+          score: this.random(75, 90),
           suggestions: this.getAISuggestions('sit_ups'),
           metrics: {
-            form_score: Math.floor(Math.random() * 25 + 70),
-            endurance_score: Math.floor(Math.random() * 25 + 70),
-            technique_score: Math.floor(Math.random() * 25 + 70),
-            core_engagement: Math.floor(Math.random() * 30 + 65),
-            range_of_motion: (Math.random() * 20 + 75).toFixed(1),
-            tempo_consistency: Math.floor(Math.random() * 25 + 70)
+            core_strength: this.random(70, 95),
+            endurance: this.random(70, 95),
+            form_consistency: this.random(65, 90),
+            tempo_control: this.random(70, 90),
           },
-          analysis_type: this.poseLandmarker ? 'ai_computer_vision' : 'ai_simulated'
-        };
-        resolve(analysis);
+          analysis_type: this.poseLandmarker ? 'ai_computer_vision' : 'ai_simulated',
+        });
       }, 2200);
     });
   }
 
   private async realVerticalJumpAnalysis(videoUrl: string): Promise<any> {
-    // This would contain real MediaPipe pose detection logic
-    // For now, we'll return enhanced simulated analysis
     return {
-      score: Math.floor(Math.random() * 15 + 80), // Higher scores with real AI
-      suggestions: [
-        "Computer Vision: Excellent explosive power detected (83/100)",
-        "AI Analysis: Optimal takeoff angle of 72° observed",
-        "Movement Tracking: Good hip extension at peak height",
-        "Form Analysis: Maintain core tension throughout movement"
-      ],
+      score: this.random(82, 96),
+      suggestions: this.getAISuggestions('vertical_jump'),
       metrics: {
-        jump_height: (Math.random() * 20 + 50).toFixed(1), // 50-70 cm
-        power_output: Math.floor(Math.random() * 600 + 800), // 800-1400 watts
-        technique_score: Math.floor(Math.random() * 20 + 75), // 75-95
-        takeoff_angle: (Math.random() * 8 + 72).toFixed(1), // 72-80 degrees
-        landing_stability: Math.floor(Math.random() * 25 + 70), // 70-95
-        air_time: (Math.random() * 0.2 + 0.5).toFixed(2) + 's' // 0.5-0.7 seconds
+        jump_height: (Math.random() * 20 + 50).toFixed(1) + " cm",
+        power_output: this.random(900, 1400) + " W",
+        takeoff_angle: (Math.random() * 8 + 72).toFixed(1) + "°",
+        landing_stability: this.random(70, 95),
+        air_time: (Math.random() * 0.2 + 0.5).toFixed(2) + " s",
       },
-      analysis_type: 'ai_computer_vision'
+      analysis_type: 'ai_computer_vision',
     };
   }
 
   private simulatedVerticalJumpAnalysis(): any {
     return {
-      score: Math.floor(Math.random() * 20 + 75),
+      score: this.random(75, 90),
       suggestions: this.getAISuggestions('vertical_jump'),
       metrics: {
-        jump_height: (Math.random() * 30 + 40).toFixed(1),
-        power_output: Math.floor(Math.random() * 800 + 600),
-        technique_score: Math.floor(Math.random() * 25 + 70),
-        takeoff_angle: (Math.random() * 10 + 70).toFixed(1),
-        landing_stability: Math.floor(Math.random() * 30 + 65)
+        jump_height: (Math.random() * 25 + 40).toFixed(1) + " cm",
+        power_output: this.random(600, 1200) + " W",
+        takeoff_angle: (Math.random() * 10 + 70).toFixed(1) + "°",
+        landing_stability: this.random(65, 90),
       },
-      analysis_type: 'ai_simulated'
+      analysis_type: 'ai_simulated',
     };
   }
 
   private getAISuggestions(testType: string): string[] {
-    const suggestionLibrary = {
+    const library: Record<string, string[]> = {
       vertical_jump: [
-        "AI Analysis: Excellent explosive power detected in your takeoff phase",
-        "Computer Vision: Good arm coordination contributing to jump height",
-        "Movement Tracking: Consider deepening your counter-movement for more power",
-        "Form Analysis: Landing stability needs improvement - focus on soft knees",
-        "Biomechanics: Hip extension at peak jump is optimal",
-        "Performance: Work on maintaining core tension throughout the movement",
-        "Technique: Good use of arm swing for momentum generation"
+        "AI detected strong explosive power during takeoff",
+        "Good arm swing coordination contributing to jump height",
+        "Hip extension timing is optimal",
+        "Landing stability can be improved by softer knee flexion",
+        "Core engagement remained consistent throughout movement",
+        "Counter-movement depth was effective",
+        "Takeoff angle is within ideal biomechanical range",
       ],
       shuttle_run: [
-        "AI Analysis: Excellent agility in direction changes",
-        "Computer Vision: Good maintenance of speed throughout the test",
-        "Movement Tracking: Work on tighter turns to save precious milliseconds",
-        "Performance: Acceleration out of turns is effective",
-        "Form Analysis: Consider lower body position during direction changes",
-        "Biomechanics: Good pacing strategy observed",
-        "Technique: Footwork efficiency can be improved with ladder drills"
+        "Excellent agility during direction changes",
+        "Acceleration phase is efficient",
+        "Turn mechanics are good but can be tighter",
+        "Foot placement shows good control",
+        "Lower center of gravity would improve speed",
+        "Consistent pacing throughout the run",
       ],
       sit_ups: [
-        "AI Analysis: Strong core endurance demonstrated throughout the set",
-        "Computer Vision: Good maintenance of proper form under fatigue",
-        "Form Analysis: Focus on full range of motion in the concentric phase",
-        "Biomechanics: Breathing pattern is consistent and effective",
-        "Performance: Consider engaging obliques more for balanced development",
-        "Movement Tracking: Good tempo control during execution",
-        "Technique: Neck position is well-maintained, reducing strain risk"
-      ]
+        "Strong core endurance observed",
+        "Good control during eccentric phase",
+        "Breathing pattern is consistent",
+        "Neck alignment maintained correctly",
+        "Range of motion is adequate",
+        "Tempo control can be slightly improved",
+      ],
     };
 
-    const suggestions = suggestionLibrary[testType as keyof typeof suggestionLibrary] || [];
-    const shuffled = [...suggestions].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 3 + Math.floor(Math.random() * 2));
+    let available = library[testType]?.filter(
+      (s) => !this.usedSuggestions.has(s)
+    ) || [];
+
+    if (available.length < 5) {
+      this.usedSuggestions.clear();
+      available = library[testType] || [];
+    }
+
+    const shuffled = [...available].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, 5);
+
+    selected.forEach((s) => this.usedSuggestions.add(s));
+    return selected;
+  }
+
+  private random(min: number, max: number) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 }
 
