@@ -113,10 +113,16 @@ export default function TakeTest() {
     loadAI()
   }, [])
 
+  useEffect(() => {
   if (!user) {
-    router.push('/login')
-    return null
+    router.replace('/login')
   }
+}, [user, router])
+
+if (!user) {
+  return null
+}
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
